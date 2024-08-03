@@ -1,4 +1,4 @@
-package com.example.demo.expection;
+package com.example.demo.exception;
 
 public class GitHubUserNotFoundException extends RuntimeException {
 
