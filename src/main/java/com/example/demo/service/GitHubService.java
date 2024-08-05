@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,21 +27,18 @@ public class GitHubService {
     public List<Repository> listNonForkRepositories(String username) {
         try {
             String url = String.format("%s/users/%s/repos", githubApiUrl, username);
-            Repository[] repositories = restTemplate.getForObject(url, Repository[].class);
+            Optional<Repository[]> optionalRepositories = Optional.ofNullable(restTemplate.getForObject(url, Repository[].class));
 
-            if (repositories == null) {
-                throw new GitHubUserNotFoundException(username);
-            }
-
-            return Arrays.stream(repositories)
-                    .filter(repo -> !repo.isFork())
-                    .map(repo -> {
-                        List<Branch> branches = fetchBranches(repo);
-                        repo.setBranches(branches);
-                        return repo;
-                    })
-                    .collect(Collectors.toList());
-
+            return optionalRepositories
+                    .map(repositories -> Arrays.stream(repositories)
+                            .filter(repo -> !repo.isFork())
+                            .map(repo -> {
+                                List<Branch> branches = fetchBranches(repo);
+                                repo.setBranches(branches);
+                                return repo;
+                            })
+                            .collect(Collectors.toList()))
+                    .orElseThrow(() -> new GitHubUserNotFoundException(username));
         } catch (HttpClientErrorException.NotFound e) {
             throw new GitHubUserNotFoundException(username);
         }
