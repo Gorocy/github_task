@@ -3,6 +3,8 @@ package com.example.demo.service;
 import com.example.demo.exception.GitHubUserNotFoundException;
 import com.example.demo.model.Branch;
 import com.example.demo.model.Repository;
+import com.example.demo.response.BranchResponse;
+import com.example.demo.response.RepositoryResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -24,7 +26,7 @@ public class GitHubService {
         this.githubApiUrl = githubApiUrl;
     }
 
-    public List<Repository> listNonForkRepositories(String username) {
+    public List<RepositoryResponse> listNonForkRepositories(String username) {
         try {
             String url = String.format("%s/users/%s/repos", githubApiUrl, username);
             Optional<Repository[]> optionalRepositories = Optional.ofNullable(restTemplate.getForObject(url, Repository[].class));
@@ -33,9 +35,8 @@ public class GitHubService {
                     .map(repositories -> Arrays.stream(repositories)
                             .filter(repo -> !repo.isFork())
                             .map(repo -> {
-                                List<Branch> branches = fetchBranches(repo);
-                                repo.setBranches(branches);
-                                return repo;
+                                List<BranchResponse> branches = fetchBranches(repo);
+                                return mapToRepositoryResponse(repo, branches);
                             })
                             .collect(Collectors.toList()))
                     .orElseThrow(() -> new GitHubUserNotFoundException(username));
@@ -44,9 +45,26 @@ public class GitHubService {
         }
     }
 
-    private List<Branch> fetchBranches(Repository repository) {
+    private List<BranchResponse> fetchBranches(Repository repository) {
         String url = repository.getBranchesUrl().replace("{/branch}", "");
         Branch[] branches = restTemplate.getForObject(url, Branch[].class);
-        return Arrays.asList(branches);
+        return Arrays.stream(branches)
+                .map(this::mapToBranchResponse)
+                .collect(Collectors.toList());
+    }
+
+    private RepositoryResponse mapToRepositoryResponse(Repository repository, List<BranchResponse> branches) {
+        RepositoryResponse response = new RepositoryResponse();
+        response.setName(repository.getName());
+        response.setOwner(repository.getOwner().getLogin());
+        response.setBranches(branches);
+        return response;
+    }
+
+    private BranchResponse mapToBranchResponse(Branch branch) {
+        BranchResponse response = new BranchResponse();
+        response.setName(branch.getName());
+        response.setCommitSha(branch.getCommit().getSha());
+        return response;
     }
 }

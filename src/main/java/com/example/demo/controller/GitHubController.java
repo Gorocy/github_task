@@ -1,6 +1,6 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.Repository;
+import com.example.demo.response.RepositoryResponse;
 import com.example.demo.service.GitHubService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,7 +26,7 @@ public class GitHubController {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Accept header must be 'application/json'");
         }
 
-        List<Repository> repositories = gitHubService.listNonForkRepositories(username);
+        List<RepositoryResponse> repositories = gitHubService.listNonForkRepositories(username);
         return ResponseEntity.ok(repositories);
     }
 }
