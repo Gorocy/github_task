@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/github")
@@ -20,9 +21,9 @@ public class GitHubController {
     @GetMapping(value = "/{username}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> listUserRepositories(
             @PathVariable String username,
-            @RequestHeader(value = "Accept", required = false) String acceptHeader) {
+            @RequestHeader(value = "Accept", required = false) Optional<String> acceptHeader) {
 
-        if (acceptHeader == null || !acceptHeader.contains(MediaType.APPLICATION_JSON_VALUE)) {
+        if (!acceptHeader.orElse("").contains(MediaType.APPLICATION_JSON_VALUE)) {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Accept header must be 'application/json'");
         }
 
